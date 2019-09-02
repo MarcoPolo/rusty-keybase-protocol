@@ -64,6 +64,7 @@ fn create_mod_file(path: &PathBuf) -> Result<(), Box<dyn Error>> {
   let mut output_filename = Path::new(path).to_path_buf();
   output_filename.push("mod.rs");
   let output_filename = map_to_output_file(&output_filename);
+  fs::create_dir_all(output_filename.parent().unwrap())?;
   let mut file = File::create(output_filename)?;
   write!(&mut file, "{}", inner_files.join("\n"))?;
 
