@@ -1,5 +1,5 @@
 [package]
-name = "rusty-keybase-protocol"
+name = "keybase-protocol"
 version = "0.1.0"
 authors = ["Marco Munizaga <marco@marcopolo.io>"]
 edition = "2018"
