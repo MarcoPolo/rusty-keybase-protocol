@@ -1,5 +1,5 @@
 use pest::Parser;
-use avdl_parser::{Rule, AVDLParser, to_rust::{self, build_rust_code_from_avdl}};
+use avdl_serde_code_generator::{Rule, AVDLParser, to_rust::{self, build_rust_code_from_avdl}};
 use std::fs::{self, File, DirEntry};
 use std::error::Error;
 use std::path::{Path, PathBuf};
@@ -11,7 +11,7 @@ fn create_rust_version(input_path: &str, output_path: &str) -> Result<(), Box<dy
   let parsed = AVDLParser::parse(Rule::avdl_protocol, &input)?;
   let mut output = File::create(output_path)?;
   // let derive_okay_paths = ["keybase1/common.rs","keybase1/upk.rs", "keybase1/teams.rs", "keybase1/reset.rs", "keybase1/tlf_keys", "stellar1/common"];
-  let derive_okay_paths = ["gregor1","keybase1/teams.rs","chat1/gregor.rs","keybase1/kbfs_common.rs","keybase1/notify_runtimestats.rs","keybase1/simple_fs.rs","keybase1/identify_common.rs","keybase1/identify_ui.rs","keybase1/git.rs","keybase1/upk.rs", "chat1/chat_ui.rs","chat1/local.rs","keybase1/tlf_keys.rs","chat1/unfurl.rs",  "chat1/api.rs","chat1/common.rs","stellar1/common.rs","chat1/commands.rs","chat1/remote.rs","keybase1/common.rs","keybase1/reset.rs", "kebayse1/teams.rs", "keybase1/favorite.rs","keybase1/identify.rs",];
+  let derive_okay_paths = ["gregor1","keybase1/teams.rs","chat1/gregor.rs","keybase1/kbfs_common.rs","keybase1/notify_runtimestats.rs","keybase1/simple_fs.rs","keybase1/identify_common.rs","keybase1/identify_ui.rs","keybase1/git.rs","keybase1/upk.rs", "chat1/chat_ui.rs","chat1/local.rs","keybase1/tlf_keys.rs","chat1/unfurl.rs",  "chat1/api.rs","chat1/common.rs","stellar1/common.rs","chat1/commands.rs","chat1/remote.rs","keybase1/common.rs","keybase1/reset.rs", "kebayse1/teams.rs", "keybase1/favorite.rs","keybase1/identify.rs", "stellar1/local.rs"];
   if derive_okay_paths.iter().any(|p| output_path.contains(p)) {
     to_rust::set_add_derive(true);
   }
