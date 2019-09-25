@@ -1,6 +1,6 @@
 [package]
 name = "keybase-protocol"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Marco Munizaga <marco@marcopolo.io>"]
 edition = "2018"
 description = "Provides the Keybase types defined in the Keybase AVDL Protocol files for Rust."
