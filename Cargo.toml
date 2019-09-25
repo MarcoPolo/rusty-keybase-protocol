@@ -13,7 +13,10 @@ license = "Apache-2.0 OR MIT"
 serde = { version = "1.0", features = ["derive"] }
 serde_repr = "0.1"
 
+[dev-dependencies]
+serde_json = "1.0"
+
 [build-dependencies]
 pest = "2.1.1"
 # avdl-serde-code-generator = { path = "../avdl-parser" }
-avdl-serde-code-generator = "0.1.0"
+avdl-serde-code-generator = "0.1.1"
