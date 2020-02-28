@@ -11,6 +11,7 @@ protocol config {
     boolean loggedIn;
     boolean sessionIsValid;
     union { null, User } user;
+    string deviceName;
   }
 
   CurrentStatus getCurrentStatus(int sessionID);
@@ -102,6 +103,7 @@ protocol config {
     string pid;
     string log;
     string ekLog;
+    string perfLog;
   }
 
   record KBFSStatus {
@@ -153,6 +155,12 @@ protocol config {
   // commands
   union { null, FullStatus } getFullStatus(int sessionID);
 
+  boolean isServiceRunning(int sessionID);
+
+  boolean isKBFSRunning(int sessionID);
+
+  array<InstrumentationStat> getNetworkStats(int sessionID, NetworkSource networkSrc);
+
   @typedef("string")  record LogSendID {}
   LogSendID logSend(int sessionID, string statusJSON, string feedback,
     boolean sendLogs, boolean sendMaxBytes);
@@ -195,6 +203,7 @@ protocol config {
     boolean isNull;
     union { null, boolean } b;
     union { null, int } i;
+    union { null, double } f; // f for "float", optimized for Go code usage.
     union { null, string } s;
     union { null, string } o;
   }
@@ -266,7 +275,7 @@ protocol config {
   }
 
   BootstrapStatus getBootstrapStatus(int sessionID);
-  void requestFollowerInfo(UID uid);
+  void requestFollowingAndUnverifiedFollowers(int sessionID);
 
   boolean getRememberPassphrase(int sessionID);
   void setRememberPassphrase(int sessionID, boolean remember);
@@ -311,4 +320,10 @@ protocol config {
 
   // Runtime Stats
   void toggleRuntimeStats();
+
+  void appendGUILogs(string content);
+
+  string generateWebAuthToken();
+
+  void updateLastLoggedInAndServerConfig(string serverConfigPath);
 }
