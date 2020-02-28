@@ -1,0 +1,49 @@
+@namespace("keybase.1")
+
+protocol wot {
+  import idl "common.avdl";
+
+  enum WotStatusType {
+    NONE_0,
+    PROPOSED_1,
+    ACCEPTED_2,
+    REJECTED_3,
+    REVOKED_4
+  }
+
+  // none (""), audio, video, email, other_chat, in_person
+  @typedef("string")
+  record UsernameVerificationType {}
+
+  record Confidence {
+    @jsonkey("vouched_by,omitempty")
+    array<UID> vouchedBy;
+    array<SigID> proofs;
+    @jsonkey("username_verified_via,omitempty")
+    UsernameVerificationType usernameVerifiedVia;
+    string other;
+    @jsonkey("known_on_keybase_days,omitempty")
+    int knownOnKeybaseDays;
+  }
+
+  void wotVouch(int sessionID, UserVersion uv /* vouchee */, array<string> vouchTexts, Confidence confidence);
+  void wotVouchCLI(int sessionID, string assertion, array<string> vouchTexts, Confidence confidence);
+
+  enum WotReactionType {
+    ACCEPT_0,
+    REJECT_1
+  }
+  void wotReact(int sessionID, UserVersion uv /* voucher */, SigID proof, WotReactionType reaction);
+
+  record WotVouch {
+    WotStatusType status;
+    SigID vouchProof;
+    UserVersion voucher;
+    array<string> vouchTexts;
+    Time vouchedAt;
+    union { null, Confidence } confidence;
+  }
+
+  array<WotVouch> wotListCLI(int sessionID, union {null, string} username);
+
+}

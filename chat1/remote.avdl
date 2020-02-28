@@ -2,8 +2,8 @@
 @compression_type("gzip")
 protocol remote {
 
-  import idl "github.com/keybase/client/go/protocol/gregor1" as gregor1;
-  import idl "github.com/keybase/client/go/protocol/keybase1" as keybase1;
+  import idl "../gregor1" as gregor1;
+  import idl "../keybase1" as keybase1;
 
   record MessageBoxed {
     // This was not present in most V1 messages.
@@ -114,6 +114,7 @@ protocol remote {
     union { null, RateLimit } rateLimit;
   }
 
+  @timeout_msec(300000) // 5 minutes
   GetInboxRemoteRes getInboxRemote(InboxVers vers, union { null, GetInboxQuery } query, union { null, Pagination } pagination);
   GetThreadRemoteRes getThreadRemote(ConversationID conversationID, GetThreadReason reason, union { null, GetThreadQuery } query, union { null, Pagination } pagination);
 
@@ -146,7 +147,7 @@ protocol remote {
   // on duplication of idTriple, and error is returned and the conversation ID of the existing conversation is returned.
   @lint("ignore")
   NewConversationRemoteRes newConversationRemote2(ConversationIDTriple idTriple, MessageBoxed TLFMessage, ConversationMembersType membersType,
-    union { null, TopicNameState } topicNameState, union { null, ConversationID } memberSourceConv);
+    union { null, TopicNameState } topicNameState, union { null, ConversationID } memberSourceConv, union { null, RetentionPolicy } retentionPolicy);
 
   GetMessagesRemoteRes getMessagesRemote(ConversationID conversationID, union { null, GetThreadReason } threadReason, array<MessageID> messageIDs);
 
@@ -213,7 +214,7 @@ protocol remote {
     SyncInboxRes inboxRes;
   }
 
-  SyncChatRes syncChat(InboxVers vers, boolean summarizeMaxMsgs);
+  SyncChatRes syncChat(InboxVers vers, boolean summarizeMaxMsgs, InboxParticipantsMode participantsMode);
 
   enum SyncAllProtVers {
     V0_0,
@@ -238,7 +239,7 @@ protocol remote {
   }
 
   @compression_type("msgpackzip")
-  SyncAllResult syncAll(gregor1.UID uid, gregor1.DeviceID deviceID, gregor1.SessionToken session, InboxVers inboxVers, gregor1.Time ctime, boolean fresh, SyncAllProtVers protVers, string hostName, boolean summarizeMaxMsgs);
+  SyncAllResult syncAll(gregor1.UID uid, gregor1.DeviceID deviceID, gregor1.SessionToken session, InboxVers inboxVers, gregor1.Time ctime, boolean fresh, SyncAllProtVers protVers, string hostName, boolean summarizeMaxMsgs, InboxParticipantsMode participantsMode);
 
   // tlfFinalize is an endpoint for kbfstlfd to notify Gregor that a TLF ID has been finalized.
   // Gregor keeps an internal record of these TLF IDs, so that it can always return the latest
@@ -272,7 +273,7 @@ protocol remote {
     array<Conversation> conversations;
     union { null, RateLimit } rateLimit;
   }
-  GetTLFConversationsRes getTLFConversations(TLFID tlfID, TopicType topicType, boolean summarizeMaxMsgs, boolean useCache);
+  GetTLFConversationsRes getTLFConversations(TLFID tlfID, TopicType topicType, boolean summarizeMaxMsgs);
 
   // Chat notification configuration endpoint. Does not need to be complete, just a delta on the
   // currently configured settings.
@@ -308,7 +309,7 @@ protocol remote {
   }
   SweepRes retentionSweepConv(ConversationID convID);
 
-  void upgradeKBFSToImpteam(TLFID tlfID);
+  void upgradeKBFSToImpteam(TLFID tlfID, keybase1.TeamID teamID);
 
   // Share extension
   void registerSharePost(ConversationID convID, gregor1.DeviceID deviceID, OutboxID outboxID);
@@ -339,7 +340,8 @@ protocol remote {
   array<ExternalAPIKey> getExternalAPIKeys(array<ExternalAPIKeyTyp> typs);
 
   // Bot commands
-  @typedef("uint64") @lint("ignore") record CommandConvVers {} 
+  @typedef("uint64") @lint("ignore") record BotInfoHashVers {}
+  @typedef("uint64") @lint("ignore") record CommandConvVers {}
   record RemoteBotCommandsAdvertisementPublic {
     ConversationID convID;
   }
@@ -354,11 +356,16 @@ protocol remote {
   }
   record BotCommandConv {
     gregor1.UID uid;
+    keybase1.TeamRole untrustedTeamRole;
     ConversationID convID;
     CommandConvVers vers;
     gregor1.Time mtime;
   }
   record BotInfo {
+    // server version controls busting client caches.
+    BotInfoHashVers serverHashVers;
+    // client version determines the hash algorithm.
+    BotInfoHashVers clientHashVers;
     array<BotCommandConv> commandConvs;
   }
   record AdvertiseBotCommandsRes {
@@ -366,10 +373,10 @@ protocol remote {
   }
   record ClearBotCommandsRes {
     union { null, RateLimit } rateLimit;
-  } 
+  }
   AdvertiseBotCommandsRes advertiseBotCommands(array<RemoteBotCommandsAdvertisement> ads);
   ClearBotCommandsRes clearBotCommands();
-  
+
   enum BotInfoResponseTyp {
     UPTODATE_0,
     INFO_1
@@ -377,12 +384,42 @@ protocol remote {
   variant BotInfoResponse switch (BotInfoResponseTyp typ) {
     case UPTODATE: void;
     case INFO: BotInfo;
-  } 
+  }
   record GetBotInfoRes {
     BotInfoResponse response;
     union { null, RateLimit } rateLimit;
   }
   @typedef("bytes") record BotInfoHash {}
-  GetBotInfoRes getBotInfo(ConversationID convID, BotInfoHash infoHash);
-  
+  GetBotInfoRes getBotInfo(ConversationID convID, BotInfoHash infoHash, BotInfoHashVers clientHashVers);
+
+  record GetDefaultTeamChannelsRes {
+    array<ConversationID> convs;
+    union { null, RateLimit } rateLimit;
+  }
+  GetDefaultTeamChannelsRes getDefaultTeamChannels(keybase1.TeamID teamID);
+
+  record SetDefaultTeamChannelsRes {
+    union { null, RateLimit } rateLimit;
+  }
+  SetDefaultTeamChannelsRes setDefaultTeamChannels(keybase1.TeamID teamID, array<ConversationID> convs);
+
+  record GetRecentJoinsRes {
+    int numJoins;
+    union { null, RateLimit } rateLimit;
+  }
+  GetRecentJoinsRes getRecentJoins(ConversationID convID);
+
+  record RefreshParticipantsRemoteRes {
+    boolean hashMatch;
+    array<gregor1.UID> uids;
+    string hash;
+    union { null, RateLimit } rateLimit;
+  }
+  RefreshParticipantsRemoteRes refreshParticipantsRemote(ConversationID convID, string hash);
+
+  record GetLastActiveAtRes {
+    gregor1.Time lastActiveAt;
+    union { null, RateLimit } rateLimit;
+  }
+  GetLastActiveAtRes getLastActiveAt(keybase1.TeamID teamID, gregor1.UID uid);
 }
